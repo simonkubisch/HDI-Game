@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de"> <!-- Set language to German -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HDI-Rang Raten</title> <!-- German Title -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Errate den HDI-Rang</h1> <!-- German Heading -->
+        <p class="subtitle">Nutze den Schieberegler, um den Rang des Landes zu raten (1 ist der höchste HDI).</p> <!-- German Subtitle -->
+
+        <div id="country-info">
+            <h2 id="country-name">Ländername</h2> <!-- Placeholder -->
+            <!-- Added flag-container for overlay -->
+            <div class="flag-container">
+                 <img id="country-flag" src="" alt="Flagge des Landes">
+                 <div class="flag-overlay"></div> <!-- Glass effect overlay -->
+            </div>
+        </div>
+
+        <div class="guess-section">
+            <label for="rank-slider">Rang-Schätzung (1 - <span id="max-rank">?</span>):</label>
+            <div class="slider-wrapper"> <!-- Added wrapper for positioning marker -->
+                <div class="slider-container">
+                    <input type="range" id="rank-slider" name="rank-slider" min="1" max="191" step="1" value="95">
+                    <span id="slider-value" class="slider-value-display">95</span>
+                    <!-- Marker for correct answer -->
+                    <span id="correct-answer-marker" class="slider-marker hidden"></span>
+                </div>
+            </div>
+            <button id="submit-guess">Antwort Senden</button> <!-- German Button Text -->
+        </div>
+
+        <p id="feedback"></p>
+        <p id="correct-answer" class="hidden"></p>
+
+        <button id="next-country" class="hidden">Nächstes Land</button> <!-- German Button Text -->
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
