@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fachbegriffe Quiz (Multiple-Select - Randomisiert)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        #quiz-container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        #question-container {
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: #eaf2f8;
+            border-left: 5px solid #3498db;
+            border-radius: 4px;
+        }
+        #question-text {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .answer-option {
+            display: block;
+            background-color: #f8f9fa;
+            border: 1px solid #d6dbdf;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .answer-option:hover {
+             background-color: #e9ecef;
+             border-color: #adb5bd;
+        }
+        .answer-option input[type="checkbox"] {
+            margin-right: 10px;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+         .answer-option label {
+             cursor: pointer;
+             display: inline;
+             user-select: none;
+             vertical-align: middle;
+         }
+        /* Feedback-Styling */
+        .answer-option.correct-selected { /* Richtige Antwort wurde ausgewählt */
+            background-color: #d4edda !important;
+            border-color: #c3e6cb !important;
+            color: #155724 !important;
+            font-weight: bold;
+        }
+        .answer-option.incorrect-selected { /* Falsche Antwort wurde ausgewählt */
+            background-color: #f8d7da !important;
+            border-color: #f5c6cb !important;
+            color: #721c24 !important;
+            font-weight: bold;
+        }
+        .answer-option.correct-missed { /* Richtige Antwort wurde NICHT ausgewählt */
+             border: 2px solid #155724 !important;
+             font-weight: bold;
+        }
+         .answer-option.incorrect-not-selected { /* Falsche Antwort wurde (korrekterweise) NICHT ausgewählt */
+             /* Kein extra Styling */
+         }
+
+
+        #feedback {
+            margin-top: 20px;
+            padding: 15px;
+            font-weight: bold;
+            border-radius: 4px;
+            text-align: center;
+        }
+        #feedback.correct-feedback {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        #feedback.incorrect-feedback {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        #navigation {
+            text-align: center;
+            margin-top: 25px;
+        }
+        #navigation button {
+            padding: 12px 25px;
+            font-size: 1em;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 0 5px;
+        }
+        #navigation button:hover:not(:disabled) {
+            background-color: #2980b9;
+        }
+        #navigation button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        #score-display {
+            text-align: center;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        #results-container {
+            text-align: center;
+            padding: 30px;
+            background-color: #eaf2f8;
+            border-radius: 8px;
+        }
+        #results-container h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+         #results-container p {
+             font-size: 1.2em;
+             margin-bottom: 25px;
+         }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container">
+    <h1>Fachbegriffe Quiz (Multiple-Select - Randomisiert)</h1>
+
+    <div id="score-display">Score: 0 | Frage: 1 / 10</div>
+
+    <div id="question-container" style="display: none;">
+        <div id="question-text"></div>
+        <div id="answer-options">
+            <!-- Antwort-Optionen (Checkboxes) werden hier per JS eingefügt -->
+        </div>
+        <div id="feedback"></div>
+    </div>
+
+    <div id="navigation">
+        <button id="start-button">Spiel starten</button>
+        <button id="check-button" style="display: none;">Antwort prüfen</button>
+        <button id="next-button" style="display: none;">Nächste Frage</button>
+        <button id="restart-button" style="display: none;">Neustart</button>
+    </div>
+
+    <div id="results-container" style="display: none;">
+        <h2>Quiz beendet!</h2>
+        <p id="final-score"></p>
+    </div>
+
+</div>
+
+<script>
+    // --- Neue Fragen-Datenstruktur ---
+    const quizQuestions = [
+        // Renaturierung
+        {
+            question: "Welches Konzept beschreibt am besten den Prozess der Renaturierung?",
+            term: "Renaturierung",
+            options: [
+                "Die zielgerichtete Reetablierung autochthoner Vegetations- und Faunacommunities in ehemals anthropogen geprägten Habitaten.", // a
+                "Der kurzfristige Eingriff in Ökosysteme zur Erhöhung der landwirtschaftlichen Produktivität.", // b
+                "Die Wiederherstellung biotischer Interaktionen und ökosystemarer Funktionen nach intensiver Nutzungsentfremdung.", // c
+                "Die Isolation invasiver Arten zur dauerhaften Sicherung der Biodiversität." // d
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Reserve
+        {
+            question: "Welche Definition fasst den ökonomischen Begriff der Reserve adäquat zusammen?",
+            term: "Reserve",
+            options: [
+                "Geologisch verifizierte Mengen eines Rohstoffvorkommens, die unter aktuellen technischen und preislichen Bedingungen abbaubar sind.", // a
+                "Potenzielle Rohstoffvorkommen, deren wirtschaftliche Erschließung von zukünftigen Technologieentwicklungen abhängt.", // b (Ressource!)
+                "Ressourcenvorräte, die ausschließlich durch Recycling gewonnen werden können.", // c
+                "Rohstoffvorkommen, die aufgrund geologischer Unsicherheiten aktuell nicht als wirtschaftlich nutzbar gelten." // d (Näher an Ressource)
+            ],
+            correctAnswers: [0] // Nur Index a ist exakt Reserve laut Glossar
+        },
+         // Fracking
+         {
+            question: "Welche Aussagen reflektieren die methodischen und ökologischen Aspekte des Frackings?",
+            term: "Fracking",
+            options: [
+                "Die hydraulische Frakturierung setzt eine Mischung aus Wasser, proppantischen Materialien und Chemikalien unter hohem Druck ein, um Gesteinsperforationen zu induzieren.", // a
+                "Fracking eliminiert vollständig die Gefahr von Seismizität in der Umgebung der Bohrstelle.", // b (Falsch)
+                "Die Methode ermöglicht die Mobilisierung von in-situ gebundenem Erdgas und Erdöl in unkonventionellen Lagerstätten.", // c
+                "Die eingesetzten Chemikalien sind stets biologisch abbaubar und umweltverträglich." // d (Falsch)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Wertschöpfungskette
+        {
+            question: "Welche Aussagen erfassen den betriebswirtschaftlichen Kern der Wertschöpfungskette?",
+            term: "Wertschöpfungskette",
+            options: [
+                "Sie beschreibt die sequenzielle Integration von Produktions- und Vermarktungsprozessen, die den Produktwert erhöhen.", // a
+                "Die Wertschöpfungskette beinhaltet ausschließlich interne Produktionsprozesse eines Unternehmens.", // b (Falsch)
+                "Sie umfasst sowohl direkte als auch indirekte Aktivitäten, die zur finalen Marktfähigkeit eines Produkts beitragen.", // c
+                "Die Analyse der Wertschöpfungskette fokussiert primär auf die logistische Distribution ohne Berücksichtigung von Zusatzdienstleistungen." // d (Falsch)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Nachhaltigkeit
+        {
+            question: "Welche der folgenden Aussagen entspricht einem integrativen Nachhaltigkeitskonzept?",
+            term: "Nachhaltigkeit",
+            options: [
+                "Nachhaltigkeit erfordert die gleichzeitige Berücksichtigung ökonomischer Effizienz, ökologischer Integrität und sozialer Gerechtigkeit.", // a
+                "Eine nachhaltige Entwicklung schließt kurzfristige Gewinnmaximierung aus, selbst wenn diese zur Verbesserung der Infrastruktur führt.", // b (Zu absolut)
+                "Das Konzept impliziert, dass die Bedürfnisse der Gegenwart befriedigt werden müssen, ohne die Handlungsspielräume zukünftiger Generationen zu beschränken.", // c
+                "Nachhaltigkeitsstrategien fokussieren primär auf den Erhalt natürlicher Ressourcen, während wirtschaftliche und soziale Aspekte sekundär sind." // d (Falsch)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Rohstoffmonitoring
+        {
+            question: "Welche Aspekte sind zentral für ein effektives Rohstoffmonitoring?",
+            term: "Rohstoffmonitoring",
+            options: [
+                "Die kontinuierliche Analyse von Preisvolatilitäten sowie von Angebots- und Nachfragetrends mineralischer Rohstoffe.", // a
+                "Die Implementierung von Frühwarnsystemen, die auf geopolitische und marktbedingte Veränderungen reagieren.", // b
+                "Die Erfassung ausschließlich meteorologischer Daten zur Optimierung der Ernteerträge.", // c (Falsch)
+                "Die Integration von technologiebasierten Prognosemodellen zur Bewertung von Rohstoffengpässen." // d
+            ],
+            correctAnswers: [0, 1, 3] // Indizes a, b und d (wie vom Nutzer vorgegeben)
+        },
+        // Energiewende
+        {
+            question: "Welche Ziele und Herausforderungen werden im Rahmen der Energiewende adressiert?",
+            term: "Energiewende",
+            options: [
+                "Der substanzielle Ersatz fossiler Energieträger durch dezentralisierte, erneuerbare Energiequellen.", // a
+                "Die konsequente Abschaltung aller konventionellen Kraftwerke ohne Zwischenlösungen.", // b (Falsch/zu absolut)
+                "Die Schaffung einer resilienten, ökologisch orientierten Energieinfrastruktur, die langfristige Versorgungssicherheit gewährleistet.", // c
+                "Die Reduktion der Energieverluste durch den Ausbau von Smart-Grid-Technologien und Speicherlösungen." // d (Ein Aspekt, aber nicht Kernziel)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Marginalität
+        {
+            question: "Welcher Aspekt wird im Konzept der Marginalität primär hervorgehoben?",
+            term: "Marginalität",
+            options: [
+                "Die strukturelle Benachteiligung bestimmter Bevölkerungsgruppen, die zu einem limitierten Zugang zu sozialen und ökonomischen Ressourcen führt.", // a
+                "Die autonome Entwicklung von Randgebieten ohne jegliche staatliche Intervention.", // b (Falsch)
+                "Die Tendenz zur sozialen Ausgrenzung, die oft mit eingeschränktem Zugang zu Bildung und Arbeitsmärkten einhergeht.", // c
+                "Die Konzentration von Wohlstand in urbanen Zentren, die zu einer Verstärkung regionaler Ungleichheiten führt." // d (Folge, nicht Kern)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+         // Konventionelle/Unkonventionelle Lagerstätte
+        {
+             question: "Welche Unterscheidungsmerkmale kennzeichnen konventionelle gegenüber unkonventionellen Lagerstätten?",
+             term: "konventionelle/unkonventionelle Lagerstätte",
+             options: [
+                "Konventionelle Lagerstätten sind durch natürliche Permeabilitätsstrukturen charakterisiert, die eine diffusionsbasierte Gasfreisetzung ermöglichen.", // a
+                "Unkonventionelle Lagerstätten erfordern meist eine Stimulation (z. B. Fracking), um in-situ gebundenes Gas oder Öl mobilisieren zu können.", // b
+                "Beide Typen basieren auf ähnlichen geologischen Prozessen, unterscheiden sich aber ausschließlich in der ökonomischen Erschließbarkeit.", // c (Falsch)
+                "Unkonventionelle Lagerstätten weisen stets geringere Exploitationskosten als konventionelle auf." // d (Falsch)
+            ],
+            correctAnswers: [0, 1] // Indizes a und b
+        },
+        // Ressource
+        {
+            question: "Wie differenziert sich der Ressourcebegriff von der Reserve im Kontext der Rohstoffökonomie?",
+            term: "Ressource",
+            options: [
+                "Ressourcen umfassen sowohl geologisch nachgewiesene als auch potenzielle Vorkommen, die unter bestimmten technologischen Bedingungen erschließbar sind.", // a
+                "Reserven sind ausschließlich auf ökonomisch nutzbare Mengen bezogen, während Ressourcen auch ungewinnbare Anteile umfassen.", // b
+                "Ressourcen beziehen sich ausschließlich auf erneuerbare Materialien, während Reserven nur nicht erneuerbare Rohstoffe einschließen.", // c (Falsch)
+                "Die Definition von Ressourcen schließt indirekt auch Umweltfaktoren und Regenerationsraten ein." // d (Nicht primär)
+            ],
+            correctAnswers: [0, 1] // Indizes a und b
+        },
+        // Syndromansatz
+        {
+            question: "Welchen methodologischen Mehrwert bietet der Syndromansatz bei der Analyse komplexer Umweltproblematiken?",
+            term: "Syndromansatz",
+            options: [
+                "Er ermöglicht die Darstellung interdependenter Ursachen-Wirkungs-Beziehungen innerhalb des globalen Wandels.", // a
+                "Er reduziert multifaktorielle Zusammenhänge auf isolierte Einzelvariablen, um kausale Effekte zu veranschaulichen.", // b (Falsch)
+                "Der Ansatz fasst charakteristische „Symptome“ (z. B. Überdüngung, Intensivierung der Landwirtschaft) zu einem Syndrom zusammen.", // c
+                "Er fördert die Entwicklung quantitativer Modelle zur direkten Prognose von Umweltrisiken." // d (Nicht primär)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Greenwashing
+        {
+            question: "Welcher Aspekt charakterisiert das Phänomen des Greenwashings in der Unternehmenskommunikation?",
+            term: "Greenwashing",
+            options: [
+                "Die strategische Inszenierung umweltfreundlicher Maßnahmen, obwohl tatsächliche ökologische Verbesserungen ausbleiben.", // a
+                "Die Nutzung transparenter Umweltberichte, die eine kritische Selbstreflexion der betrieblichen Prozesse fördern.", // b (Gegenteil)
+                "Die selektive Darstellung positiver Umweltindikatoren, während negative Daten diskret zurückgehalten werden.", // c
+                "Die vollständige Integration nachhaltiger Praktiken in alle Geschäftsbereiche." // d (Gegenteil)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Thinning und Thickening
+        {
+            question: "Wie werden die Konzepte „Thinning“ und „Thickening“ innerhalb von Produktions- und Wertschöpfungsketten operationalisiert?",
+            term: "Thinning und Thickening",
+            options: [
+                "Thinning bezeichnet die Spezialisierung auf einen einzelnen Produktionsschritt innerhalb eines komplexen Prozesses.", // a
+                "Thickening impliziert die Erweiterung der eigenen Wertschöpfungsaktivitäten durch Inhouse-Integration zusätzlicher Prozessschritte.", // b
+                "Beide Begriffe beschreiben grundsätzlich Outsourcing-Strategien zur Kostenreduktion.", // c (Falsch)
+                "Die Prozesse werden genutzt, um die betriebliche Flexibilität und Kontrolle entlang der Lieferkette zu erhöhen." // d (Mögliche Folge)
+            ],
+            correctAnswers: [0, 1] // Indizes a und b (basierend auf Glossar)
+        },
+        // Ölsandabbau
+        {
+            question: "Welche technischen und ökologischen Herausforderungen sind im Kontext des Ölsandabbaus signifikant?",
+            term: "Ölsandabbau",
+            options: [
+                "Die extraktive Gewinnung von Bitumen durch Tagebau, die mit einem hohen Wasserverbrauch und intensiven Eingriffen in das Landschaftsbild einhergeht.", // a
+                "Der Einsatz von Auswaschtechnologien, die oft zu einer langanhaltenden Beeinträchtigung lokaler Wasserressourcen führen.", // b
+                "Die Nutzung von unterirdischen Bohrverfahren, die minimalinvasiv sind und das Ökosystem kaum berühren.", // c (Falsch)
+                "Die Tatsache, dass durch den Abbau kurzfristig hohe Erträge erzielt werden, jedoch langfristig eine hohe Renaturierungsbarriere besteht." // d
+            ],
+            correctAnswers: [0, 1, 3] // Indizes a, b und d (wie vom Nutzer vorgegeben)
+        },
+        // Reichweite
+        {
+            question: "Wie wird die „Reichweite“ eines Rohstoffs im wissenschaftlichen Kontext präzise definiert?",
+            term: "Reichweite",
+            options: [
+                "Als das Verhältnis der nachgewiesenen Vorkommen zum jährlichen Verbrauch unter Berücksichtigung regenerativer Prozesse.", // a (Falsch: nicht-erneuerbar)
+                "Als der Zeitraum, in dem ein nicht-erneuerbarer Rohstoff bei konstantem Verbrauch verfügbar bleibt.", // b
+                "Als ein Indikator für die Recyclingfähigkeit des Rohstoffs in industriellen Anwendungen.", // c (Falsch)
+                "Als die absolute Menge des Rohstoffs, die in einer Lagerstätte vorhanden ist, unabhängig vom Verbrauch." // d (Falsch)
+            ],
+            correctAnswers: [1] // Nur Index b (gemäß Glossar)
+        },
+        // ITC
+        {
+            question: "Welche dynamischen meteorologischen Prozesse charakterisieren die ITC?",
+            term: "ITC",
+            options: [
+                "Die Konvergenz von Nordost- und Südostpassatströmen, die zu einer signifikanten atmosphärischen Aufwindeffekten führt.", // a
+                "Die zyklische Wanderung des Tiefdruckgebietes im äquatorialen Bereich, gekoppelt an den zenitalen Sonnenstand.", // b
+                "Eine permanente, statische Wetterformation, die mit stabilen Hochdruckbedingungen assoziiert ist.", // c (Falsch)
+                "Die Bildung von frontalbedingten Niederschlagsbanden im mittleren Breitenbereich." // d (Falsch)
+            ],
+            correctAnswers: [0, 1] // Indizes a und b
+        },
+        // Orographie
+        {
+            question: "Welche Dimensionen der Orographie sind für die geowissenschaftliche Charakterisierung von Landschaften von Bedeutung?",
+            term: "Orographie",
+            options: [
+                "Die morphometrische Analyse von Höhenverteilungen, Hangneigungen und Reliefamplituden.", // a (Verlauf)
+                "Die Untersuchung der tektonischen Prozesse, die zur Bildung von Gebirgszügen führen.", // b (Bildung/Entwicklung)
+                "Die isolierte Betrachtung der Bodenarten ohne Berücksichtigung der topographischen Strukturen.", // c (Falsch)
+                "Die Integration von geographischen Informationssystemen (GIS) zur Erfassung und Modellierung von Geländeformen." // d (Methode)
+            ],
+            correctAnswers: [0, 1] // Indizes a und b (Kern der Definition)
+        },
+         // Import und Export
+        {
+            question: "Welches Verständnis der internationalen Handelsströme wird durch die Begriffe Import und Export vermittelt?",
+            term: "Import und Export",
+            options: [
+                "Der Export umfasst die grenzüberschreitende Distribution von Gütern, wobei auch damit verbundene Dienstleistungen berücksichtigt werden können.", // a
+                "Der Import beschreibt den zollrechtlich geregelten Zufluss von Waren in ein Binnenland, der auch qualitative Aspekte umfasst.", // b
+                "Beide Prozesse sind rein logistischer Natur und lassen wirtschaftspolitische Einflussfaktoren außen vor.", // c (Falsch)
+                "Import und Export wirken als Indikatoren für die wirtschaftliche Integration eines Landes in den globalen Markt." // d
+            ],
+            correctAnswers: [0, 1, 3] // Indizes a, b und d (wie vom Nutzer vorgegeben)
+        },
+        // Relief
+        {
+            question: "Welche methodischen Ansätze werden zur quantitativen Erfassung des Reliefs genutzt?",
+            term: "Relief",
+            options: [
+                "Die Bestimmung absoluter und relativer Höhenwerte mittels Geodäsie und Fernerkundung.", // a
+                "Die Analyse von Hangneigungsdaten und Abstandsmessungen zwischen Geländeelementen.", // b
+                "Die Anwendung von erosionsbasierten Modellen, die ausschließlich klimatische Parameter berücksichtigen.", // c (Zu eingeschränkt)
+                "Die Durchführung von topographischen Vermessungen zur Erstellung digitaler Geländemodelle (DGM)." // d
+            ],
+            correctAnswers: [0, 1, 3] // Indizes a, b und d (wie vom Nutzer vorgegeben)
+        },
+        // Grüne Wiese
+        {
+            question: "Welchen ökologischen Diskurs illustriert der Begriff „Grüne Wiese“ im Kontext von Rekultivierungsprozessen?",
+            term: "Grüne Wiese",
+            options: [
+                "Die Darstellung von Flächen, die zwar oberflächlich vegetiert erscheinen, jedoch ein dauerhaft verändertes, nicht rekonstruierbares Ökosystem aufweisen.", // a
+                "Die Bezeichnung für naturnahe Areale, in denen durch gezielte Renaturierungsmaßnahmen das ursprüngliche Ökosystem vollständig wiederhergestellt wird.", // b (Gegenteil)
+                "Die Kritik an oberflächlichen Rekultivierungsmaßnahmen, die zwar visuell ansprechend sind, aber die komplexe biologische Struktur nicht reetablieren können.", // c
+                "Eine Strategie, bei der invasive Arten gezielt zur Stabilisierung von Bodenstrukturen eingesetzt werden." // d (Falsch)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Bodendegradition
+        {
+            question: "Welcher Aspekt charakterisiert den Prozess der Bodendegradition in agrarökologischen Systemen?",
+            term: "Bodendegradition",
+            options: [
+                "Die irreversible Reduktion der Bodenfruchtbarkeit infolge von Nährstoffauswaschung und Erosionsprozessen.", // a
+                "Die temporäre Veränderung der Bodenstruktur durch saisonale Niederschläge ohne nachhaltigen Nährstoffverlust.", // b (Falsch)
+                "Den Verlust essenzieller Bodenorganismen und -funktionen, der langfristig zu Unfruchtbarkeit führen kann.", // c
+                "Die gezielte Bodenverbesserung durch intensive Fruchtwechsel und organische Düngung." // d (Gegenteil)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Protektionismus
+        {
+            question: "Welche der folgenden Aussagen spiegelt die wirtschaftspolitische Logik des Protektionismus adäquat wider?",
+            term: "Protektionismus",
+            options: [
+                "Die gezielte Einschränkung von Importen zur Stärkung inländischer Industrien und Sicherung von Arbeitsplätzen.", // a
+                "Die uneingeschränkte Liberalisierung des internationalen Handels zur Förderung des globalen Wettbewerbs.", // b (Gegenteil)
+                "Der Einsatz von Zöllen und nichttarifären Handelshemmnissen als strategisches Instrument nationaler Wirtschaftspolitik.", // c
+                "Die vollständige Abschottung eines Marktes als Reaktion auf globale Wirtschaftskrisen." // d (Zu extrem)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Neokolonialismus
+        {
+            question: "Welcher Diskurs liegt dem Begriff des Neokolonialismus zugrunde?",
+            term: "Neokolonialismus",
+            options: [
+                "Die ökonomische und politische Abhängigkeit ehemaliger Kolonien von ihren Ex-Besatzungsmächten, die Wachstumspotenziale hemmt.", // a
+                "Die vollständige Selbstbestimmung ehemals kolonialisierter Staaten durch die Abschaffung internationaler Handelsbeziehungen.", // b (Falsch)
+                "Die strukturelle Dominanz externer Akteure, die Einfluss auf lokale Wertschöpfungsketten und Entwicklungsstrategien ausüben.", // c
+                "Die temporäre Überbrückung ökonomischer Krisen durch internationale Hilfsprogramme." // d (Nicht Kern)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Hegemonialkonflikt
+        {
+            question: "Welche Merkmale kennzeichnen einen Hegemonialkonflikt im internationalen Kontext?",
+            term: "Hegemonialkonflikt",
+            options: [
+                "Der Wettstreit um politische, ökonomische und kulturelle Vorherrschaft zwischen konkurrierenden globalen Akteuren.", // a
+                "Die interne Auseinandersetzung innerhalb eines Landes um die Verteilung staatlicher Ressourcen.", // b (Falsch)
+                "Die Konfrontation zwischen regionalen Machtzentren, die um Einflussbereiche und strategische Allianzen ringen.", // c
+                "Die isolierte Konkurrenz einzelner Unternehmen im globalen Markt ohne staatliche Beteiligung." // d (Falsch)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Extraktivismus
+        {
+            question: "Welcher Aspekt wird im Rahmen des Extraktivismus als zentraler Kritikpunkt hervorgehoben?",
+            term: "Extraktivismus",
+            options: [
+                "Die einseitige Fokussierung auf den maximalen Ressourcengewinn ohne nachhaltige Rücksicht auf ökologische und soziale Konsequenzen.", // a
+                "Die integrative Einbindung lokaler Bevölkerungsgruppen in alle Phasen der Ressourcenverwertung.", // b (Gegenteil/selten)
+                "Die kurzfristige Profitmaximierung, die zu langfristigen strukturellen Ungleichgewichten führen kann.", // c
+                "Die Förderung einer diversifizierten Industrie, die auf hochtechnologische Innovationen setzt." // d (Gegenteil)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Kritikalität
+        {
+            question: "Welches Konzept wird durch den Begriff der Kritikalität in wirtschaftlichen Netzwerken veranschaulicht?",
+            term: "Kritikalität",
+            options: [
+                "Das systemische Risiko, das entsteht, wenn ein einzelnes Glied in einer Wertschöpfungskette ausfällt und den gesamten Produktionsfluss destabilisiert.", // a
+                "Die isolierte Betrachtung einzelner Unternehmensbereiche ohne Berücksichtigung interdependenter Effekte.", // b (Falsch)
+                "Die Notwendigkeit, kritische Infrastrukturen durch redundante Systeme abzusichern.", // c (Folge/Anwendung)
+                "Die Feststellung, dass jedes Element in einer Produktionskette unabhängig voneinander funktioniert." // d (Falsch)
+            ],
+            correctAnswers: [0] // Index a (gemäß Glossar)
+        },
+        // OECD - Länder
+        {
+            question: "Welches Verständnis charakterisiert die Mitgliedschaft in den OECD-Ländern?",
+            term: "OECD - Länder",
+            options: [
+                "Eine internationale Gemeinschaft von Staaten, die gemeinsame wirtschaftspolitische Standards und Entwicklungsziele verfolgt.", // a
+                "Eine Organisation, die ausschließlich für Länder mit einem hohen Pro-Kopf-Einkommen konzipiert ist.", // b (Falsch)
+                "Ein Zusammenschluss, der sich der Förderung von Wohlstand, Gerechtigkeit und lebensqualitätsorientierten Politiken widmet.", // c
+                "Eine Gruppe von Ländern, die primär auf den Ausbau von militärischen Allianzen fokussiert ist." // d (Falsch)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Entwicklungsländer
+        {
+            question: "Welche Merkmale werden typischerweise zur Klassifizierung von Entwicklungsländern herangezogen?",
+            term: "Entwicklungsländer",
+            options: [
+                "Niedriges Pro-Kopf-Einkommen, hohe Kindersterblichkeit und eingeschränkter Zugang zu Bildung und Gesundheitsversorgung.", // a
+                "Vollständig industrialisierte Volkswirtschaften mit hohem Lebensstandard.", // b (Gegenteil)
+                "Strukturelle ökonomische Herausforderungen und oft mangelnde Infrastruktur, die eine nachhaltige Entwicklung behindern.", // c
+                "Eine überproportionale Integration in globale Wertschöpfungsketten als Indikator für wirtschaftlichen Fortschritt." // d (Nicht unbedingt)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Klimawandel
+        {
+            question: "Welcher wissenschaftliche Konsens liegt der Definition des Klimawandels zugrunde?",
+            term: "Klimawandel",
+            options: [
+                "Eine langfristige Veränderung der globalen Temperatur- und Niederschlagsmuster, maßgeblich beeinflusst durch anthropogene Treibhausgasemissionen.", // a
+                "Kurzfristige Wetterschwankungen, die saisonal bedingt sind und keine nachhaltigen Auswirkungen haben.", // b (Falsch)
+                "Der Prozess der stetigen Erwärmung der Erdatmosphäre seit der Industrialisierung, vornehmlich durch den Anstieg von Kohlendioxid.", // c
+                "Eine ausschließlich natürliche, zyklische Veränderung der Erdtemperaturen ohne menschlichen Einfluss." // d (Falsch)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Tropische Wirbelstürme
+        {
+            question: "Welche meteorologischen Charakteristika definieren tropische Wirbelstürme?",
+            term: "tropische Wirbelstürme",
+            options: [
+                "Sie entstehen über warmen tropischen Meeresoberflächen durch intensive Verdunstung und charakteristische Tiefdruckzonen.", // a
+                "Die Klassifikation erfolgt anhand von Windgeschwindigkeiten, die in mehreren Intensitätsstufen gemessen werden.", // b
+                "Sie sind durch eine geringe Feuchtigkeitskonzentration in der Atmosphäre und stabile Hochdrucksysteme gekennzeichnet.", // c (Falsch)
+                "Ihre Bildung wird primär durch Kaltluftzuflüsse in polaren Regionen initiiert." // d (Falsch)
+            ],
+            correctAnswers: [0, 1] // Indizes a und b
+        },
+        // Globales Netzwerk
+        {
+            question: "Welcher Begriff beschreibt am präzisesten die Eigenschaften eines globalen Netzwerks im Kontext moderner Informationssysteme?",
+            term: "globales Netzwerk",
+            options: [
+                "Ein dezentral organisiertes System, das geographisch verstreute lokale Netzwerke über digitale Infrastrukturen miteinander verbindet.", // a
+                "Eine monolithische IT-Struktur, die ausschließlich auf lokalen Servern basiert und keine internationale Vernetzung ermöglicht.", // b (Falsch)
+                "Ein flexibles Kommunikationssystem, das interkontinental operierende Organisationen in Echtzeit vernetzt.", // c
+                "Ein rein analoges Netz, das auf traditionellen Fernmeldeanlagen basiert und kaum modernen Anforderungen genügt." // d (Falsch)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+         // Wiege-zu-Wiege Konzept
+        {
+            question: "Welche Zielsetzung verfolgt das Wiege-zu-Wiege Konzept im Rahmen der Kreislaufwirtschaft?",
+            term: "Wiege-zu-Wiege Konzept",
+            options: [
+                "Die vollständige Rückführung aller eingesetzten Materialien in den Produktionskreislauf durch biologische oder technische Wiederverwertung.", // a
+                "Die ausschließliche Nutzung von Primärrohstoffen ohne Berücksichtigung von Recyclingprozessen.", // b (Gegenteil)
+                "Die Schaffung eines geschlossen geregelten Materialflusses, der Abfall vermeidet und Ressourcen schont.", // c
+                "Die Integration von Einwegprodukten als Standard in der industriellen Fertigung." // d (Gegenteil)
+            ],
+            correctAnswers: [0, 2] // Indizes a und c
+        },
+        // Downcycling
+        {
+            question: "Welcher Prozess beschreibt das Downcycling in der Abfallwirtschaft?",
+            term: "Downcycling",
+            options: [
+                "Das Recycling von Materialien zu Produkten mit geringerer Qualität und Funktionalität im Vergleich zum ursprünglichen Material.", // a
+                "Die Wiederaufbereitung von Abfällen zu gleichwertigen Materialien, die den ursprünglichen Spezifikationen entsprechen.", // b (Upcycling/Recycling)
+                "Der technische Abbau von Wertstoffen, bei dem es zu einer Reduktion der ursprünglichen Materialeigenschaften kommt.", // c (Ähnlich a)
+                "Eine Methode zur Vermeidung von Recyclingprozessen durch Wiederverwendung von Materialien ohne Qualitätsverlust." // d (Wiederverwendung)
+            ],
+            correctAnswers: [0] // Index a (gemäß Glossar)
+        },
+         // Nutzungska(s)kade
+        {
+             question: "Welcher Prozess wird durch den Begriff der Nutzungskaskade in Bezug auf organische Rohstoffe beschrieben?",
+             term: "Nutzungskaskade",
+             options: [
+                 "Die mehrfache Nutzung eines Rohstoffs in abnehmender Wertschöpfungsqualität, bis er als Kompost endverwertet wird.", // a
+                 "Die Einmalnutzung von Rohstoffen mit anschließender vollständiger Eliminierung der Materialreststoffe.", // b
+                 "Die schrittweise Optimierung von Produktionsprozessen zur Steigerung des Endwerts eines Rohstoffs ohne Materialverluste.", // c
+                 "Die hierarchische Verwertung von organischen Materialien, bei der jede Nutzungsebene einen geringeren Mehrwert generiert." // d
+             ],
+             correctAnswers: [0, 3] // Indizes a und d
+         },
+         // Good Governance
+         {
+             question: "Welche Prinzipien werden im Konzept der Good Governance zentral betont?",
+             term: "Good Governance",
+             options: [
+                 "Transparenz, Rechenschaftspflicht und effektive Inklusion aller gesellschaftlichen Gruppen in den Entscheidungsprozess.", // a
+                 "Eine zentralisierte Machtstruktur, in der Entscheidungen ausschließlich von einer Elitengruppe getroffen werden.", // b
+                 "Die Sicherstellung der Bereitstellung öffentlicher Güter und sozialer Dienstleistungen in partizipativen Prozessen.", // c
+                 "Die Maximierung von Bürokratie zur Gewährleistung eines kontrollierten Staatsapparats." // d
+             ],
+             correctAnswers: [0, 2] // Indizes a und c
+         },
+         // Corruption Perceptions Index
+         {
+             question: "Welcher methodische Ansatz liegt dem Corruption Perceptions Index zugrunde?",
+             term: "Corruption Perceptions Index",
+             options: [
+                 "Die Aggregation subjektiver Einschätzungen zur Korruptionswahrnehmung in unterschiedlichen Ländern.", // a
+                 "Die direkte quantitative Messung von Korruptionsdelikten anhand von Justizstatistiken.", // b
+                 "Die Erstellung einer Rangordnung von Staaten anhand von Expertenbefragungen und internationalen Vergleichsdaten.", // c
+                 "Die ausschließliche Berücksichtigung von Steuerbetrugsfällen als Indikator für staatliche Korruption." // d
+             ],
+             correctAnswers: [0, 2] // Indizes a und c
+         },
+         // OPEC-Staaten
+         {
+             question: "Welche Charakteristika definieren die Rolle der OPEC-Staaten im globalen Energiemarkt?",
+             term: "OPEC-Staaten",
+             options: [
+                 "Eine kollektive Organisation, die den Erdölmarkt durch Produktionsquoten und Reservenmanagement zu beeinflussen sucht.", // a
+                 "Eine Allianz, deren Mitglieder ausschließlich aus Ländern mit geringem Erdölvorkommen bestehen.", // b
+                 "Die strategische Bündelung von Staaten, die zusammen einen signifikanten Anteil der weltweiten Erdölproduktion und -reserven kontrollieren.", // c
+                 "Eine Organisation, die primär auf die Förderung erneuerbarer Energien abzielt." // d
+             ],
+             correctAnswers: [0, 2] // Indizes a und c
+         },
+         // HDI
+         {
+             question: "Welche Komponenten fließen in die Berechnung des HDI ein?",
+             term: "HDI",
+             options: [
+                 "Ökonomische Indikatoren wie Bruttonationaleinkommen, ergänzt durch soziale Parameter wie Bildungsgrad und Lebenserwartung.", // a
+                 "Nur quantifizierbare Wirtschaftsdaten, die ausschließlich das Pro-Kopf-Einkommen widerspiegeln.", // b
+                 "Multidimensionale Faktoren, die neben ökonomischen auch gesundheits- und bildungsbezogene Aspekte integrieren.", // c
+                 "Exklusiv Umweltindikatoren, die den ökologischen Fußabdruck eines Landes messen." // d
+             ],
+             correctAnswers: [0, 2] // Indizes a und c
+         },
+         // Bad Governance
+         {
+             question: "Welche Merkmale kennzeichnen das Phänomen der Bad Governance?",
+             term: "Bad Governance",
+             options: [
+                 "Ineffiziente, intransparente und von Korruption geprägte staatliche Entscheidungsprozesse, die dem Gemeinwohl abträglich sind.", // a
+                 "Ein hohes Maß an bürokratischer Effizienz und öffentlicher Rechenschaftspflicht.", // b
+                 "Die systematische Vernachlässigung von Minderheiteninteressen zugunsten einer korrupten Elite.", // c
+                 "Eine governance-Struktur, die ausschließlich auf partizipative und transparente Entscheidungsprozesse setzt." // d
+             ],
+             correctAnswers: [0, 2] // Indizes a und c
+         }
+    ];
+
+    // --- Spiel-Variablen ---
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let questions = [];
+    const totalQuestions = 10;
+    let answerChecked = false;
+
+    // --- DOM-Elemente ---
+    const quizContainer = document.getElementById('quiz-container');
+    const questionContainer = document.getElementById('question-container');
+    const questionTextElement = document.getElementById('question-text');
+    const answerOptionsElement = document.getElementById('answer-options');
+    const feedbackElement = document.getElementById('feedback');
+    const scoreDisplayElement = document.getElementById('score-display');
+    const startButton = document.getElementById('start-button');
+    const checkButton = document.getElementById('check-button');
+    const nextButton = document.getElementById('next-button');
+    const restartButton = document.getElementById('restart-button');
+    const resultsContainer = document.getElementById('results-container');
+    const finalScoreElement = document.getElementById('final-score');
+
+    // --- Hilfsfunktionen ---
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+     function stripHtml(html) {
+        let tmp = document.createElement("DIV");
+        tmp.innerHTML = html;
+        let text = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
+        return text;
+     }
+
+     function arraysEqualUnordered(arr1, arr2) {
+         if (!arr1 || !arr2 || arr1.length !== arr2.length) return false; // Null-Check hinzugefügt
+         const sortedArr1 = [...arr1].sort((a, b) => a - b);
+         const sortedArr2 = [...arr2].sort((a, b) => a - b);
+         for (let i = 0; i < sortedArr1.length; i++) {
+             if (sortedArr1[i] !== sortedArr2[i]) return false;
+         }
+         return true;
+     }
+
+    // --- Spiellogik ---
+    function startGame() {
+        score = 0;
+        currentQuestionIndex = 0;
+        answerChecked = false;
+        feedbackElement.textContent = '';
+        feedbackElement.className = 'feedback';
+        resultsContainer.style.display = 'none';
+        startButton.style.display = 'none';
+        checkButton.style.display = 'inline-block';
+        nextButton.style.display = 'none';
+        restartButton.style.display = 'none';
+        questionContainer.style.display = 'block';
+        checkButton.disabled = false;
+
+        // Fragen für diese Runde auswählen und mischen
+        questions = shuffleArray([...quizQuestions]).slice(0, totalQuestions);
+
+        updateScoreDisplay();
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        answerChecked = false;
+        feedbackElement.textContent = '';
+        feedbackElement.className = 'feedback';
+        checkButton.style.display = 'inline-block';
+        nextButton.style.display = 'none';
+        checkButton.disabled = false;
+        answerOptionsElement.innerHTML = ''; // Alte Antworten löschen
+
+        if (currentQuestionIndex >= totalQuestions) {
+            showResults();
+            return;
+        }
+
+        const currentQuestionData = questions[currentQuestionIndex];
+
+        // Überprüfung der Fragendaten (wichtig!)
+        if (!currentQuestionData || !Array.isArray(currentQuestionData.options) || !Array.isArray(currentQuestionData.correctAnswers)) {
+             console.error("Fehler: Ungültige oder fehlende Daten für Frage Index:", currentQuestionIndex, currentQuestionData);
+             questionTextElement.textContent = "Fehler beim Laden dieser Frage.";
+             feedbackElement.textContent = "Frage konnte nicht geladen werden. Daten überprüfen!";
+             feedbackElement.className = 'feedback incorrect-feedback';
+             checkButton.style.display = 'none';
+             nextButton.style.display = 'inline-block';
+             return;
+        }
+
+        questionTextElement.textContent = currentQuestionData.question;
+
+        // Optionen mit Korrektheits-Flag erstellen und mischen
+        let optionsWithCorrectness = currentQuestionData.options.map((optionText, index) => {
+            return {
+                text: optionText,
+                isCorrect: currentQuestionData.correctAnswers.includes(index),
+                originalIndex: index // Speichere den ursprünglichen Index, falls benötigt
+            };
+        });
+        optionsWithCorrectness = shuffleArray(optionsWithCorrectness);
+
+        // Checkboxen basierend auf der gemischten Reihenfolge erstellen
+        optionsWithCorrectness.forEach((optionData, displayIndex) => {
+            const optionId = `option-${displayIndex}`;
+
+            const div = document.createElement('div');
+            div.classList.add('answer-option');
+            div.dataset.correct = optionData.isCorrect ? "true" : "false";
+             // Speichere den Anzeige-Index, um ihn später zu identifizieren
+            div.dataset.displayIndex = displayIndex;
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = optionId;
+            checkbox.name = 'answer';
+            checkbox.value = displayIndex; // Wert ist der Anzeige-Index
+
+            const label = document.createElement('label');
+            label.htmlFor = optionId;
+            label.textContent = stripHtml(optionData.text);
+            label.title = stripHtml(optionData.text);
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            answerOptionsElement.appendChild(div);
+
+            div.addEventListener('click', (e) => {
+                if (e.target !== checkbox && !answerChecked) {
+                    checkbox.checked = !checkbox.checked;
+                }
+            });
+         });
+
+        updateScoreDisplay();
+    }
+
+
+    function checkAnswer() {
+        if (answerChecked) return; // Verhindert doppeltes Prüfen
+        answerChecked = true;
+        checkButton.disabled = true;
+        nextButton.style.display = 'inline-block';
+
+        const optionElements = answerOptionsElement.querySelectorAll('.answer-option');
+        const selectedDisplayIndices = [];
+        const actualCorrectDisplayIndices = []; // Anzeige-Indizes der korrekten Optionen
+
+         // Ausgewählte Optionen und tatsächlich korrekte Optionen identifizieren (basierend auf ihrer aktuellen Position)
+        optionElements.forEach((option, displayIndex) => {
+            const checkbox = option.querySelector('input[type="checkbox"]');
+            checkbox.disabled = true; // Checkboxen deaktivieren
+            const isCorrectOption = option.dataset.correct === "true";
+
+            if (isCorrectOption) {
+                 actualCorrectDisplayIndices.push(displayIndex); // Sammle die Anzeige-Indizes der korrekten
+            }
+
+            if (checkbox.checked) {
+                selectedDisplayIndices.push(displayIndex); // Sammle die Anzeige-Indizes der ausgewählten
+            }
+        });
+
+         // Auswertung: Sind die Sätze der Anzeige-Indizes identisch?
+         const isAnswerCorrect = arraysEqualUnordered(selectedDisplayIndices, actualCorrectDisplayIndices);
+
+
+        if (isAnswerCorrect) {
+            score++;
+            feedbackElement.textContent = "Richtig!";
+            feedbackElement.className = 'feedback correct-feedback';
+        } else {
+            feedbackElement.textContent = "Nicht ganz richtig.";
+            feedbackElement.className = 'feedback incorrect-feedback';
+        }
+
+        // Visuelles Feedback für jede Option geben
+        optionElements.forEach(option => {
+            const isCorrectOption = option.dataset.correct === "true";
+            const checkbox = option.querySelector('input[type="checkbox"]');
+            const isSelected = checkbox.checked;
+
+            if (isCorrectOption && isSelected) {
+                option.classList.add('correct-selected');
+            } else if (!isCorrectOption && isSelected) {
+                option.classList.add('incorrect-selected');
+            } else if (isCorrectOption && !isSelected) {
+                option.classList.add('correct-missed');
+            } else {
+                 option.classList.add('incorrect-not-selected');
+            }
+        });
+
+        updateScoreDisplay();
+    }
+
+     function nextQuestion() {
+        currentQuestionIndex++;
+        loadQuestion();
+     }
+
+     function showResults() {
+        questionContainer.style.display = 'none';
+        checkButton.style.display = 'none';
+        nextButton.style.display = 'none';
+        resultsContainer.style.display = 'block';
+        restartButton.style.display = 'inline-block';
+        finalScoreElement.textContent = `Dein Ergebnis: ${score} von ${totalQuestions} Fragen richtig beantwortet.`;
+     }
+
+     function updateScoreDisplay() {
+          scoreDisplayElement.textContent = `Score: ${score} | Frage: ${Math.min(currentQuestionIndex + 1, totalQuestions)} / ${totalQuestions}`;
+     }
+
+    // --- Event Listener ---
+    startButton.addEventListener('click', startGame);
+    checkButton.addEventListener('click', checkAnswer);
+    nextButton.addEventListener('click', nextQuestion);
+    restartButton.addEventListener('click', startGame);
+
+</script>
+
+</body>
+</html>
